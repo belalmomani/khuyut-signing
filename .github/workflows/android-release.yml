@@ -1,8 +1,10 @@
 name: Android Release
 
 on:
-  push:
-    tags: ["v*"]
+  # مؤقتًا: يدوي فقط إلى أن تُضاف أسرار التوقيع.
+  # بعد إضافتها أعد تفعيل الدفع بالوسم بإلغاء التعليق التالي:
+  # push:
+  #   tags: ["v*"]
   workflow_dispatch:
 
 permissions:
