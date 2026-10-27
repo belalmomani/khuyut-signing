@@ -34,15 +34,21 @@ if client is None:
     sys.exit(f"❌ لا يوجد عميل بالحزمة {app_id} في google-services.json. الموجود: {pkgs}")
 print(f"✅ package_name يطابق applicationId: {app_id}")
 
+oauth = client.get("oauth_client", [])
 hashes = {
     o.get("android_info", {}).get("certificate_hash", "").lower()
-    for o in client.get("oauth_client", [])
+    for o in oauth
 }
 hashes.discard("")
-if expected_hash in hashes:
-    print("✅ بصمة SHA-1 المعتمدة مسجّلة في Firebase")
+
+if not oauth:
+    # Firebase لا يكتب البصمات في الملف إلا إذا وُجد OAuth client (مثل تفعيل تسجيل الدخول بجوجل).
+    print("⚠️  oauth_client فارغ: لا يمكن التحقق من البصمات من هذا الملف.")
+    print("    تحقق منها يدويًا في Firebase Console (Project settings > تطبيقك > SHA certificate fingerprints).")
+    print("    إن كنت ستستخدم تسجيل الدخول بجوجل فعّله في Authentication ثم نزّل الملف من جديد.")
+elif expected_hash in hashes:
+    print("✅ بصمة SHA-1 المعتمدة مسجّلة في google-services.json")
 else:
-    print("❌ بصمة SHA-1 المعتمدة غير مسجّلة في google-services.json")
+    print("❌ OAuth clients موجودة لكن بصمة SHA-1 المعتمدة غير مسجّلة فيها")
     print(f"   المسجّل: {sorted(hashes) if hashes else 'لا شيء'}")
-    print("   سجّل SHA-1 وSHA-256 في Firebase ثم نزّل الملف من جديد.")
     sys.exit(1)

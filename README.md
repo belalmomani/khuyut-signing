@@ -70,6 +70,16 @@ keyPassword=...
 ./scripts/verify-signing.sh aab app/build/outputs/bundle/release/app-release.aab
 ```
 
+## إضافة الأسرار بأمر واحد
+
+على جهازك (مع `gh` و`keytool`):
+
+```bash
+./scripts/setup-secrets.sh /path/to/release.jks owner/repo
+```
+
+يتحقق من البصمات أولًا، ولا يرفع شيئًا إن لم تطابق. كلمات المرور تُدخل مخفية ولا تُحفظ.
+
 ## البناء الآلي (GitHub Actions)
 
 أضف في Settings › Secrets and variables › Actions:
