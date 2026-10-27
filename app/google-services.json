@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "128742460061",
+    "project_id": "pricescope-491a2",
+    "storage_bucket": "pricescope-491a2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:128742460061:android:820243df2fdeda8bfee274",
+        "android_client_info": {
+          "package_name": "com.khuyutalarab.game"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBcq7csJOURRIcGKKJEtWMdsU3w6A-D640"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:128742460061:android:dc4fd4839f765e4afee274",
+        "android_client_info": {
+          "package_name": "com.pricescope.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBcq7csJOURRIcGKKJEtWMdsU3w6A-D640"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
