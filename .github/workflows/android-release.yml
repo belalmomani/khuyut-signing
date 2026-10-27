@@ -19,7 +19,10 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - uses: android-actions/setup-android@v3
+      # Android SDK مثبّت مسبقًا على ubuntu-latest، فلا حاجة لـ setup-android
+      # (كانت تفشل بـ "Failed to find package 'tools'"). نكتفي بقبول التراخيص.
+      - name: Accept Android SDK licenses
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
 
       # لا يوجد gradlew في المستودع بعد؛ نستخدم Gradle 8.9 مباشرة.
       # (بعد تشغيل `gradle wrapper` وإضافة gradlew يمكن حذف gradle-version.)
