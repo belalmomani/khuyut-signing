@@ -31,6 +31,7 @@ class MainActivity : AppCompatActivity() {
     private val selected = linkedSetOf<String>()
     private var mistakes = 0
     private var finished = false
+    private var won = false
 
     private lateinit var infoText: TextView
     private lateinit var messageText: TextView
@@ -53,8 +54,67 @@ class MainActivity : AppCompatActivity() {
         if (stats.lastDay != today) {
             stats.lastDay = today
             stats.puzzleIndex = (today % Puzzles.all.size).toInt()
+            stats.saved = null // يوم جديد: لا نكمل لغز الأمس
         }
-        startPuzzle(stats.puzzleIndex)
+        // أكمل من حيث توقفت إن وُجد تقدم محفوظ سليم، وإلا ابدأ اللغز من جديد
+        if (!restoreProgress()) startPuzzle(stats.puzzleIndex)
+    }
+
+    /** يحفظ حالة اللغز الحالي: الفهرس|الأخطاء|الحالة|المجموعات المحلولة|الكلمات المتبقية */
+    private fun saveProgress() {
+        val solvedIdx = solved.map { puzzle.groups.indexOf(it) }.joinToString(",")
+        val state = if (!finished) 0 else if (won) 1 else 2
+        stats.saved = listOf(
+            puzzleIndex.toString(), mistakes.toString(), state.toString(),
+            solvedIdx, remaining.joinToString(",")
+        ).joinToString("|")
+    }
+
+    /** يستعيد التقدم المحفوظ إن كان سليمًا ويخص لغز اليوم الحالي، وإلا يعيد false. */
+    private fun restoreProgress(): Boolean {
+        val raw = stats.saved ?: return false
+        return try {
+            val parts = raw.split("|", limit = 5)
+            if (parts.size < 5) return false
+            val idx = parts[0].toInt()
+            if (idx != stats.puzzleIndex || idx !in Puzzles.all.indices) return false
+            val p = Puzzles.all[idx]
+            val mist = parts[1].toInt()
+            val state = parts[2].toInt()
+            val solvedIdx = if (parts[3].isEmpty()) emptyList() else parts[3].split(",").map { it.toInt() }
+            val rem = if (parts[4].isEmpty()) emptyList() else parts[4].split(",")
+
+            if (mist !in 0..maxMistakes || state !in 0..2) return false
+            if (solvedIdx.any { it !in p.groups.indices } || solvedIdx.toSet().size != solvedIdx.size) return false
+
+            val solvedGroups = solvedIdx.map { p.groups[it] }
+            val expected = p.allWords - solvedGroups.flatMap { it.words }.toSet()
+            if (state == 0) {
+                if (rem.size != expected.size || rem.toSet() != expected.toSet()) return false
+            } else {
+                if (solvedGroups.size != p.groups.size || rem.isNotEmpty()) return false
+            }
+
+            puzzleIndex = idx
+            puzzle = p
+            solved.clear()
+            solved.addAll(solvedGroups)
+            remaining = rem.toMutableList()
+            selected.clear()
+            mistakes = mist
+            finished = state != 0
+            won = state == 1
+            nextBtn.visibility = if (finished) View.VISIBLE else View.GONE
+            messageText.text = when (state) {
+                1 -> "مبروك! أكملت اللعبة 🎉"
+                2 -> "انتهت المحاولات. هذه هي المجموعات الصحيحة."
+                else -> "تابع من حيث توقفت"
+            }
+            render()
+            true
+        } catch (e: Exception) {
+            false // أي بيانات تالفة: نبدأ لغزًا جديدًا بدل أن ينهار التطبيق
+        }
     }
 
     private fun buildUi() {
@@ -142,6 +202,7 @@ class MainActivity : AppCompatActivity() {
         selected.clear()
         mistakes = 0
         finished = false
+        won = false
         remaining = puzzle.allWords.shuffled().toMutableList()
         nextBtn.visibility = View.GONE
         messageText.text = ""
@@ -173,6 +234,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun finish(win: Boolean) {
         finished = true
+        won = win
         stats.record(win)
         if (!win) {
             // اكشف المجموعات المتبقية
@@ -233,6 +295,8 @@ class MainActivity : AppCompatActivity() {
         submitBtn.isEnabled = !finished && selected.size == 4
         shuffleBtn.isEnabled = !finished
         clearBtn.isEnabled = !finished && selected.isNotEmpty()
+
+        saveProgress()
     }
 
     private fun toggle(word: String) {

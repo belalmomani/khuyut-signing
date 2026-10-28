@@ -22,6 +22,11 @@ class Stats(context: Context) {
     var puzzleIndex: Int
         get() = prefs.getInt("puzzle_index", 0)
         set(v) = prefs.edit().putInt("puzzle_index", v).apply()
+    /** تقدم اللغز الحالي كنص مبسّط (يُحفظ محليًا). null = لا يوجد تقدم محفوظ. */
+    var saved: String?
+        get() = prefs.getString("saved", null)
+        set(v) = prefs.edit().putString("saved", v).apply()
+
     var lastDay: Long
         get() = prefs.getLong("last_day", -1L)
         set(v) = prefs.edit().putLong("last_day", v).apply()
