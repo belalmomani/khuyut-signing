@@ -1,0 +1,30 @@
+# ===== التوقيع والأسرار: لا تُرفع أبدًا =====
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.pem
+*.key
+keystore.properties
+signing.properties
+local.properties
+.env
+.env.*
+secrets/
+
+# ملفات Firebase الحساسة (احتفظ بـ google-services.json حسب سياستك)
+service-account*.json
+firebase-adminsdk*.json
+
+# ===== Android / Gradle =====
+*.iml
+.gradle/
+build/
+.idea/
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+*.ap_
+*.dex
