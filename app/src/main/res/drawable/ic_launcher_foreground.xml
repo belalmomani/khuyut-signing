@@ -3,11 +3,53 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- أيقونة مؤقتة: خيط متقاطع بسيط -->
+    <!-- شبكة 4×4: كل صف بلون مجموعة من مجموعات اللعبة -->
     <path
-        android:fillColor="#00000000"
-        android:strokeColor="#F2C14E"
-        android:strokeWidth="5"
-        android:strokeLineCap="round"
-        android:pathData="M34,34 L74,74 M74,34 L34,74" />
+        android:fillColor="#F2C14E"
+        android:pathData="M25.5,25.5h12v12h-12z" />
+    <path
+        android:fillColor="#F2C14E"
+        android:pathData="M40.5,25.5h12v12h-12z" />
+    <path
+        android:fillColor="#F2C14E"
+        android:pathData="M55.5,25.5h12v12h-12z" />
+    <path
+        android:fillColor="#F2C14E"
+        android:pathData="M70.5,25.5h12v12h-12z" />
+    <path
+        android:fillColor="#7FB77E"
+        android:pathData="M25.5,40.5h12v12h-12z" />
+    <path
+        android:fillColor="#7FB77E"
+        android:pathData="M40.5,40.5h12v12h-12z" />
+    <path
+        android:fillColor="#7FB77E"
+        android:pathData="M55.5,40.5h12v12h-12z" />
+    <path
+        android:fillColor="#7FB77E"
+        android:pathData="M70.5,40.5h12v12h-12z" />
+    <path
+        android:fillColor="#6FA8DC"
+        android:pathData="M25.5,55.5h12v12h-12z" />
+    <path
+        android:fillColor="#6FA8DC"
+        android:pathData="M40.5,55.5h12v12h-12z" />
+    <path
+        android:fillColor="#6FA8DC"
+        android:pathData="M55.5,55.5h12v12h-12z" />
+    <path
+        android:fillColor="#6FA8DC"
+        android:pathData="M70.5,55.5h12v12h-12z" />
+    <path
+        android:fillColor="#9B7FC4"
+        android:pathData="M25.5,70.5h12v12h-12z" />
+    <path
+        android:fillColor="#9B7FC4"
+        android:pathData="M40.5,70.5h12v12h-12z" />
+    <path
+        android:fillColor="#9B7FC4"
+        android:pathData="M55.5,70.5h12v12h-12z" />
+    <path
+        android:fillColor="#9B7FC4"
+        android:pathData="M70.5,70.5h12v12h-12z" />
 </vector>
