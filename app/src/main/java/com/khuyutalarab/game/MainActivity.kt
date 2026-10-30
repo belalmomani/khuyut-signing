@@ -1,5 +1,6 @@
 package com.khuyutalarab.game
 
+import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
@@ -41,6 +42,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var shuffleBtn: Button
     private lateinit var clearBtn: Button
     private lateinit var nextBtn: Button
+    private lateinit var shareBtn: Button
 
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
 
@@ -181,6 +183,13 @@ class MainActivity : AppCompatActivity() {
         }
         root.addView(nextBtn)
 
+        shareBtn = Button(this).apply {
+            text = "مشاركة النتيجة"
+            visibility = View.GONE
+            setOnClickListener { shareResult() }
+        }
+        root.addView(shareBtn)
+
         setContentView(ScrollView(this).apply {
             setBackgroundColor(Color.parseColor("#F5F1E8"))
             addView(root, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
@@ -296,7 +305,27 @@ class MainActivity : AppCompatActivity() {
         shuffleBtn.isEnabled = !finished
         clearBtn.isEnabled = !finished && selected.isNotEmpty()
 
+        shareBtn.visibility = if (finished) View.VISIBLE else View.GONE
+
         saveProgress()
+    }
+
+    /** يشارك النتيجة كنص: مربعات ملونة بترتيب حل المجموعات، دون كشف الكلمات. */
+    private fun shareResult() {
+        val squares = arrayOf("🟨", "🟩", "🟦", "🟪")
+        val text = if (won) {
+            val grid = solved.joinToString("\n") { g ->
+                squares[g.level.coerceIn(0, 3)].repeat(4)
+            }
+            "${getString(R.string.app_name)} 🧩\nحللتُ اللغز بـ $mistakes من $maxMistakes أخطاء\n$grid"
+        } else {
+            "${getString(R.string.app_name)} 🧩\nلم أنجح في لغز اليوم هذه المرة"
+        }
+        val send = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, text)
+        }
+        startActivity(Intent.createChooser(send, "مشاركة النتيجة"))
     }
 
     private fun toggle(word: String) {
