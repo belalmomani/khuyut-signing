@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- ضع هنا App ID الخاص بتطبيقك من لوحة Start.io (Apps > App ID). -->
-    <!-- ما دام يبدأ بـ REPLACE فلن يعمل الإعلان ويظهر «الإعلان غير متاح». -->
-    <string name="startio_app_id" translatable="false">REPLACE_WITH_START_IO_APP_ID</string>
+    <!-- ما دام فارغًا أو يبدأ بـ REPLACE فلن يعمل الإعلان ويظهر «الإعلان غير متاح». -->
+    <string name="startio_app_id" translatable="false">210191393</string>
 </resources>
