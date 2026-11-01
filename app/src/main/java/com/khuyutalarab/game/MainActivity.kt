@@ -387,7 +387,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         val left = (maxMistakes - mistakes).coerceAtLeast(0)
-        infoText.text = "المحاولات المتبقية: $left" + if (practice) "   |   وضع التدريب" else ""
+        infoText.text = "اللغز ${puzzleIndex + 1} من ${Puzzles.all.size}   |   المحاولات المتبقية: $left" + if (practice) "   |   وضع التدريب" else ""
 
         submitBtn.isEnabled = !finished && selected.size == 4
         shuffleBtn.isEnabled = !finished
@@ -485,6 +485,7 @@ class MainActivity : AppCompatActivity() {
         if (finished) return
         if (word in selected) selected.remove(word)
         else if (selected.size < 4) selected.add(word)
+        sfx.tick()
         render()
     }
 

@@ -24,6 +24,7 @@ class SoundFx {
         }
     }
 
+    fun tick() = play(ToneGenerator.TONE_PROP_BEEP, 40)
     fun correct() = play(ToneGenerator.TONE_PROP_ACK, 150)
     fun wrong() = play(ToneGenerator.TONE_PROP_NACK, 200)
     fun win() = play(ToneGenerator.TONE_CDMA_CONFIRM, 600)
