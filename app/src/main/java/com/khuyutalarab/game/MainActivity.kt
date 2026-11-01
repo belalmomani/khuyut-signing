@@ -31,7 +31,7 @@ class MainActivity : AppCompatActivity() {
         (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
     }
     private val bgColor get() = Color.parseColor(if (night) "#14213A" else "#F5F1E8")
-    private val titleColor get() = Color.parseColor(if (night) "#F2C14E" else "#1B3A5C")
+    private val headingColor get() = Color.parseColor(if (night) "#F2C14E" else "#1B3A5C")
     private val subColor get() = Color.parseColor(if (night) "#C9D1E0" else "#444444")
     private val tileColor get() = Color.parseColor(if (night) "#2B3A5A" else "#E3DCCB")
     private val tileTextColor get() = Color.parseColor(if (night) "#F3F4F8" else "#1A1A1A")
@@ -172,7 +172,7 @@ class MainActivity : AppCompatActivity() {
         root.addView(TextView(this).apply {
             text = getString(R.string.app_name)
             textSize = 26f
-            setTextColor(titleColor)
+            setTextColor(headingColor)
             gravity = Gravity.CENTER
         })
         root.addView(TextView(this).apply {
@@ -190,7 +190,7 @@ class MainActivity : AppCompatActivity() {
 
         messageText = TextView(this).apply {
             textSize = 16f
-            setTextColor(titleColor)
+            setTextColor(headingColor)
             gravity = Gravity.CENTER
             setPadding(0, dp(12), 0, dp(4))
         }
