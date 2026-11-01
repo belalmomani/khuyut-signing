@@ -4,13 +4,16 @@ import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
+import android.content.res.Configuration
 import android.view.Gravity
+import android.view.HapticFeedbackConstants
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
@@ -22,6 +25,18 @@ class MainActivity : AppCompatActivity() {
         Color.parseColor("#6FA8DC"), // أزرق
         Color.parseColor("#9B7FC4"), // بنفسجي
     )
+
+    // ألوان الواجهة تتبع وضع النظام (فاتح/داكن)
+    private val night: Boolean by lazy {
+        (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+    }
+    private val bgColor get() = Color.parseColor(if (night) "#14213A" else "#F5F1E8")
+    private val titleColor get() = Color.parseColor(if (night) "#F2C14E" else "#1B3A5C")
+    private val subColor get() = Color.parseColor(if (night) "#C9D1E0" else "#444444")
+    private val tileColor get() = Color.parseColor(if (night) "#2B3A5A" else "#E3DCCB")
+    private val tileTextColor get() = Color.parseColor(if (night) "#F3F4F8" else "#1A1A1A")
+    private val tileSelColor get() = Color.parseColor(if (night) "#F2C14E" else "#1B3A5C")
+    private val tileSelTextColor get() = Color.parseColor(if (night) "#14213A" else "#FFFFFF")
 
     private lateinit var stats: Stats
     private lateinit var puzzle: Puzzle
@@ -43,13 +58,34 @@ class MainActivity : AppCompatActivity() {
     private lateinit var clearBtn: Button
     private lateinit var nextBtn: Button
     private lateinit var shareBtn: Button
+    private lateinit var hintBtn: Button
+    private lateinit var ads: RewardedHint
+    private val maxHints = 2
+    private var hintsUsed = 0
+    private var practice = false // لغز أُعيد: للتدريب ولا يُحتسب في الإحصاءات
+    private lateinit var restartBtn: Button
+    private lateinit var giveUpBtn: Button
+    private lateinit var helpBtn: Button
+    private lateinit var statsBtn: Button
+    private lateinit var soundBtn: Button
+    private val sfx = SoundFx()
+
+    override fun onDestroy() {
+        sfx.release()
+        super.onDestroy()
+    }
+
+    private fun soundLabel() = if (stats.soundOn) "🔊 الصوت" else "🔇 الصوت"
 
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         stats = Stats(this)
+        sfx.enabled = stats.soundOn
         buildUi()
+        ads = RewardedHint(this)
+        ads.init()
 
         // لعبة اليوم: تتغير مرة كل يوم، وتبقى نفسها عند إعادة فتح التطبيق في اليوم ذاته
         val today = System.currentTimeMillis() / 86_400_000L
@@ -60,6 +96,12 @@ class MainActivity : AppCompatActivity() {
         }
         // أكمل من حيث توقفت إن وُجد تقدم محفوظ سليم، وإلا ابدأ اللغز من جديد
         if (!restoreProgress()) startPuzzle(stats.puzzleIndex)
+
+        // أول تشغيل: اعرض شرح اللعبة مرة واحدة
+        if (!stats.seenHelp) {
+            stats.seenHelp = true
+            showHelp()
+        }
     }
 
     /** يحفظ حالة اللغز الحالي: الفهرس|الأخطاء|الحالة|المجموعات المحلولة|الكلمات المتبقية */
@@ -105,8 +147,8 @@ class MainActivity : AppCompatActivity() {
             selected.clear()
             mistakes = mist
             finished = state != 0
+            practice = stats.practice
             won = state == 1
-            nextBtn.visibility = if (finished) View.VISIBLE else View.GONE
             messageText.text = when (state) {
                 1 -> "مبروك! أكملت اللعبة 🎉"
                 2 -> "انتهت المحاولات. هذه هي المجموعات الصحيحة."
@@ -124,19 +166,19 @@ class MainActivity : AppCompatActivity() {
             orientation = LinearLayout.VERTICAL
             layoutDirection = View.LAYOUT_DIRECTION_RTL
             setPadding(dp(16), dp(16), dp(16), dp(16))
-            setBackgroundColor(Color.parseColor("#F5F1E8"))
+            setBackgroundColor(bgColor)
         }
 
         root.addView(TextView(this).apply {
             text = getString(R.string.app_name)
             textSize = 26f
-            setTextColor(Color.parseColor("#1B3A5C"))
+            setTextColor(titleColor)
             gravity = Gravity.CENTER
         })
         root.addView(TextView(this).apply {
             text = "اجمع الكلمات الستة عشر في أربع مجموعات، في كل مجموعة أربع كلمات يجمعها رابط."
             textSize = 14f
-            setTextColor(Color.parseColor("#444444"))
+            setTextColor(subColor)
             gravity = Gravity.CENTER
             setPadding(0, dp(4), 0, dp(12))
         })
@@ -148,18 +190,24 @@ class MainActivity : AppCompatActivity() {
 
         messageText = TextView(this).apply {
             textSize = 16f
-            setTextColor(Color.parseColor("#1B3A5C"))
+            setTextColor(titleColor)
             gravity = Gravity.CENTER
             setPadding(0, dp(12), 0, dp(4))
         }
         infoText = TextView(this).apply {
             textSize = 15f
-            setTextColor(Color.parseColor("#444444"))
+            setTextColor(subColor)
             gravity = Gravity.CENTER
             setPadding(0, 0, 0, dp(8))
         }
         root.addView(messageText)
         root.addView(infoText)
+
+        hintBtn = Button(this).apply {
+            text = "تلميح (شاهد إعلانًا قصيرًا)"
+            setOnClickListener { requestHint() }
+        }
+        root.addView(hintBtn)
 
         val controls = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -173,15 +221,50 @@ class MainActivity : AppCompatActivity() {
         controls.addView(submitBtn)
         root.addView(controls)
 
-        nextBtn = Button(this).apply {
-            text = "لعبة جديدة"
-            visibility = View.GONE
-            setOnClickListener {
+        // صف أدوات اللغز: إعادة / لغز آخر
+        val tools1 = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutDirection = View.LAYOUT_DIRECTION_RTL
+        }
+        restartBtn = controlButton("إعادة اللغز") {
+            if (hasProgress()) confirm("إعادة اللغز من البداية؟ (الإعادة للتدريب ولا تُحتسب في إحصاءاتك)") { startPuzzle(puzzleIndex, true) }
+            else startPuzzle(puzzleIndex, true)
+        }
+        nextBtn = controlButton("لغز آخر") {
+            val goNext = {
                 stats.puzzleIndex = (stats.puzzleIndex + 1) % Puzzles.all.size
                 startPuzzle(stats.puzzleIndex)
             }
+            if (hasProgress()) confirm("ترك هذا اللغز والانتقال إلى لغز آخر؟", goNext) else goNext()
         }
-        root.addView(nextBtn)
+        tools1.addView(restartBtn)
+        tools1.addView(nextBtn)
+        root.addView(tools1)
+
+        // صف ثانٍ: استسلام / كيف تلعب
+        val tools2 = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutDirection = View.LAYOUT_DIRECTION_RTL
+        }
+        giveUpBtn = controlButton("استسلام") {
+            if (!finished) confirm("الاستسلام وكشف الحل؟ سيُحتسب هذا اللغز خسارة.") {
+                finish(false)
+                render()
+            }
+        }
+        helpBtn = controlButton("كيف تلعب؟") { showHelp() }
+        statsBtn = controlButton("إحصاءات") { showStats() }
+        tools2.addView(giveUpBtn)
+        tools2.addView(helpBtn)
+        tools2.addView(statsBtn)
+        soundBtn = controlButton(soundLabel()) {
+            stats.soundOn = !stats.soundOn
+            sfx.enabled = stats.soundOn
+            soundBtn.text = soundLabel()
+            sfx.correct()
+        }
+        tools2.addView(soundBtn)
+        root.addView(tools2)
 
         shareBtn = Button(this).apply {
             text = "مشاركة النتيجة"
@@ -191,7 +274,7 @@ class MainActivity : AppCompatActivity() {
         root.addView(shareBtn)
 
         setContentView(ScrollView(this).apply {
-            setBackgroundColor(Color.parseColor("#F5F1E8"))
+            setBackgroundColor(bgColor)
             addView(root, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         })
     }
@@ -204,7 +287,10 @@ class MainActivity : AppCompatActivity() {
             setOnClickListener { action() }
         }
 
-    private fun startPuzzle(index: Int) {
+    private fun startPuzzle(index: Int, isPractice: Boolean = false) {
+        hintsUsed = 0
+        practice = isPractice
+        stats.practice = isPractice
         puzzleIndex = index
         puzzle = Puzzles.all[index]
         solved.clear()
@@ -213,7 +299,6 @@ class MainActivity : AppCompatActivity() {
         finished = false
         won = false
         remaining = puzzle.allWords.shuffled().toMutableList()
-        nextBtn.visibility = View.GONE
         messageText.text = ""
         render()
     }
@@ -228,6 +313,8 @@ class MainActivity : AppCompatActivity() {
             remaining.removeAll(chosen)
             selected.clear()
             messageText.text = "أحسنت! ${exact.title}"
+            window.decorView.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+            sfx.correct()
             if (solved.size == puzzle.groups.size) finish(true)
         } else {
             mistakes++
@@ -236,6 +323,8 @@ class MainActivity : AppCompatActivity() {
             }
             messageText.text = if (oneAway) "قريب! كلمة واحدة فقط خارج المجموعة" else "ليست مجموعة صحيحة"
             selected.clear()
+            window.decorView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+            sfx.wrong()
             if (mistakes >= maxMistakes) finish(false)
         }
         render()
@@ -244,7 +333,8 @@ class MainActivity : AppCompatActivity() {
     private fun finish(win: Boolean) {
         finished = true
         won = win
-        stats.record(win)
+        if (!practice) stats.record(win)
+        if (win) sfx.win() else sfx.lose()
         if (!win) {
             // اكشف المجموعات المتبقية
             puzzle.groups.filter { it !in solved }.forEach { solved.add(it) }
@@ -253,7 +343,6 @@ class MainActivity : AppCompatActivity() {
         } else {
             messageText.text = "مبروك! أكملت اللعبة 🎉"
         }
-        nextBtn.visibility = View.VISIBLE
     }
 
     private fun render() {
@@ -286,8 +375,8 @@ class MainActivity : AppCompatActivity() {
                     text = word
                     textSize = 15f
                     isAllCaps = false
-                    setTextColor(if (isSel) Color.WHITE else Color.parseColor("#1A1A1A"))
-                    background = rounded(if (isSel) Color.parseColor("#1B3A5C") else Color.parseColor("#E3DCCB"))
+                    setTextColor(if (isSel) tileSelTextColor else tileTextColor)
+                    background = rounded(if (isSel) tileSelColor else tileColor)
                     isEnabled = !finished
                     layoutParams = LinearLayout.LayoutParams(0, dp(64), 1f)
                         .apply { setMargins(dp(3), dp(3), dp(3), dp(3)) }
@@ -298,16 +387,80 @@ class MainActivity : AppCompatActivity() {
         }
 
         val left = (maxMistakes - mistakes).coerceAtLeast(0)
-        infoText.text = "المحاولات المتبقية: $left   |   " +
-            "فزت ${stats.won} من ${stats.played}   |   التتابع ${stats.streak} (الأفضل ${stats.best})"
+        infoText.text = "المحاولات المتبقية: $left" + if (practice) "   |   وضع التدريب" else ""
 
         submitBtn.isEnabled = !finished && selected.size == 4
         shuffleBtn.isEnabled = !finished
         clearBtn.isEnabled = !finished && selected.isNotEmpty()
 
         shareBtn.visibility = if (finished) View.VISIBLE else View.GONE
+        hintBtn.isEnabled = !finished
+        giveUpBtn.isEnabled = !finished
 
         saveProgress()
+    }
+
+    /** تلميح مقابل إعلان: يكشف اسم أسهل مجموعة لم تُحل بعد. حد أقصى لكل لغز. */
+    private fun requestHint() {
+        if (finished) return
+        if (hintsUsed >= maxHints) {
+            messageText.text = "استخدمت كل التلميحات المتاحة لهذا اللغز"
+            return
+        }
+        ads.show(
+            onReward = {
+                val target = puzzle.groups.filter { it !in solved }.minByOrNull { it.level }
+                if (target != null && !finished) {
+                    hintsUsed++
+                    messageText.text = "تلميح: إحدى المجموعات هي «${target.title}»"
+                    render()
+                }
+            },
+            onUnavailable = {
+                messageText.text = "الإعلان غير متاح الآن، حاول بعد قليل"
+            }
+        )
+    }
+
+    private fun showStats() {
+        val played = stats.played
+        val rate = if (played == 0) 0 else stats.won * 100 / played
+        AlertDialog.Builder(this)
+            .setTitle("إحصاءاتك")
+            .setMessage(
+                "ألعاب مكتملة: $played\n" +
+                "الفوز: ${stats.won} ($rate%)\n" +
+                "التتابع الحالي: ${stats.streak}\n" +
+                "أفضل تتابع: ${stats.best}\n\n" +
+                "(إعادة اللغز للتدريب لا تُحتسب هنا)"
+            )
+            .setPositiveButton("حسنًا", null)
+            .show()
+    }
+
+    private fun hasProgress() = !finished && (solved.isNotEmpty() || mistakes > 0)
+
+    private fun confirm(message: String, onYes: () -> Unit) {
+        AlertDialog.Builder(this)
+            .setMessage(message)
+            .setPositiveButton("نعم") { _, _ -> onYes() }
+            .setNegativeButton("إلغاء", null)
+            .show()
+    }
+
+    private fun showHelp() {
+        AlertDialog.Builder(this)
+            .setTitle("كيف تلعب؟")
+            .setMessage(
+                "• أمامك 16 كلمة، وهي أربع مجموعات في كل مجموعة أربع كلمات يجمعها رابط.\n" +
+                "• اضغط أربع كلمات تظن أنها مجموعة واحدة ثم اضغط «تأكيد».\n" +
+                "• إن صدقت تظهر المجموعة باسم رابطها ولونها: الأصفر الأسهل والبنفسجي الأصعب.\n" +
+                "• إن أخطأت تخسر محاولة من أربع. وتظهر «قريب» إن كانت ثلاث كلمات صحيحة.\n" +
+                "• «تلميح» يكشف اسم إحدى المجموعات مقابل مشاهدة إعلان قصير.\n" +
+                "• «إعادة اللغز» للتدريب ولا تُحتسب في الإحصاءات، و«لغز آخر» ينقلك إلى لغز جديد."
+            )
+            .setPositiveButton("فهمت", null)
+            .show()
     }
 
     /** يشارك النتيجة كنص: مربعات ملونة بترتيب حل المجموعات، دون كشف الكلمات. */

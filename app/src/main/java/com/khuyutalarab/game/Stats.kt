@@ -27,6 +27,21 @@ class Stats(context: Context) {
         get() = prefs.getString("saved", null)
         set(v) = prefs.edit().putString("saved", v).apply()
 
+    /** هل عُرضت شاشة «كيف تلعب» أول مرة؟ */
+    var seenHelp: Boolean
+        get() = prefs.getBoolean("seen_help", false)
+        set(v) = prefs.edit().putBoolean("seen_help", v).apply()
+
+    /** هل اللغز الحالي أُعيد للتدريب؟ (يُحفظ حتى لا تُحتسب النتيجة بعد إغلاق التطبيق) */
+    var practice: Boolean
+        get() = prefs.getBoolean("practice", false)
+        set(v) = prefs.edit().putBoolean("practice", v).apply()
+
+    /** الصوت مفعّل؟ (الافتراضي نعم) */
+    var soundOn: Boolean
+        get() = prefs.getBoolean("sound_on", true)
+        set(v) = prefs.edit().putBoolean("sound_on", v).apply()
+
     var lastDay: Long
         get() = prefs.getLong("last_day", -1L)
         set(v) = prefs.edit().putLong("last_day", v).apply()
