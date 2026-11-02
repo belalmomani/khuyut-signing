@@ -387,14 +387,17 @@ class MainActivity : AppCompatActivity() {
         }
 
         val left = (maxMistakes - mistakes).coerceAtLeast(0)
-        infoText.text = "اللغز ${puzzleIndex + 1} من ${Puzzles.all.size}   |   المحاولات المتبقية: $left" + if (practice) "   |   وضع التدريب" else ""
+        infoText.text = "اللغز ${puzzleIndex + 1} من ${Puzzles.all.size}   |   المحاولات المتبقية: $left" +
+            (if (stats.streak > 0) "   |   🔥 التتابع: ${stats.streak}" else "") +
+            (if (practice) "   |   وضع التدريب" else "")
 
         submitBtn.isEnabled = !finished && selected.size == 4
         shuffleBtn.isEnabled = !finished
         clearBtn.isEnabled = !finished && selected.isNotEmpty()
 
         shareBtn.visibility = if (finished) View.VISIBLE else View.GONE
-        hintBtn.isEnabled = !finished
+        hintBtn.isEnabled = !finished && hintsUsed < maxHints
+        hintBtn.text = "تلميح (شاهد إعلانًا قصيرًا) — المتبقي ${(maxHints - hintsUsed).coerceAtLeast(0)}"
         giveUpBtn.isEnabled = !finished
 
         saveProgress()
