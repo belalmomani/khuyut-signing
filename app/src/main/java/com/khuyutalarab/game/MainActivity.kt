@@ -324,6 +324,8 @@ class MainActivity : AppCompatActivity() {
     private fun controlButton(label: String, action: () -> Unit): Button =
         Button(this).apply {
             text = label
+            textSize = 13f
+            setPadding(dp(4), paddingTop, dp(4), paddingBottom)
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
                 .apply { setMargins(dp(3), 0, dp(3), 0) }
             setOnClickListener { action() }
