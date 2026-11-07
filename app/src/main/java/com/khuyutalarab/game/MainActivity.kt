@@ -62,6 +62,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var ads: RewardedHint
     private val maxHints = 2
     private var hintsUsed = 0
+    private val hinted = mutableSetOf<String>() // عناوين المجموعات التي أُعطي تلميحها في اللغز الحالي
     private var practice = false // لغز أُعيد: للتدريب ولا يُحتسب في الإحصاءات
     private lateinit var restartBtn: Button
     private lateinit var giveUpBtn: Button
@@ -70,7 +71,40 @@ class MainActivity : AppCompatActivity() {
     private lateinit var soundBtn: Button
     private val sfx = SoundFx()
 
+    // تحدٍّ بوقت: لغز عشوائي للتدريب (لا يدخل الإحصاءات) خلال 3 دقائق
+    private var timer: android.os.CountDownTimer? = null
+    private var secondsLeft = -1 // -1 = لا يوجد مؤقت
+    private val timedSeconds = 180
+
+    private fun stopTimer() {
+        timer?.cancel()
+        timer = null
+        secondsLeft = -1
+    }
+
+    private fun startTimed() {
+        startPuzzle((0 until Puzzles.all.size).random(), true)
+        secondsLeft = timedSeconds
+        timer = object : android.os.CountDownTimer(timedSeconds * 1000L, 1000L) {
+            override fun onTick(msLeft: Long) {
+                secondsLeft = (msLeft / 1000L).toInt()
+                if (!finished) render()
+            }
+
+            override fun onFinish() {
+                if (!finished) {
+                    finish(false)
+                    messageText.text = "انتهى الوقت! هذه هي المجموعات الصحيحة."
+                    secondsLeft = 0
+                    render()
+                }
+            }
+        }.start()
+        render()
+    }
+
     override fun onDestroy() {
+        timer?.cancel()
         sfx.release()
         super.onDestroy()
     }
@@ -273,6 +307,14 @@ class MainActivity : AppCompatActivity() {
         }
         root.addView(shareBtn)
 
+        root.addView(Button(this).apply {
+            text = "⏱ تحدٍّ بوقت (3 دقائق)"
+            setOnClickListener {
+                if (!finished && hasProgress()) confirm("بدء تحدٍّ جديد؟ سيُترك اللغز الحالي.") { startTimed() }
+                else startTimed()
+            }
+        })
+
         setContentView(ScrollView(this).apply {
             setBackgroundColor(bgColor)
             addView(root, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
@@ -288,7 +330,9 @@ class MainActivity : AppCompatActivity() {
         }
 
     private fun startPuzzle(index: Int, isPractice: Boolean = false) {
+        stopTimer()
         hintsUsed = 0
+        hinted.clear()
         practice = isPractice
         stats.practice = isPractice
         puzzleIndex = index
@@ -333,6 +377,7 @@ class MainActivity : AppCompatActivity() {
     private fun finish(win: Boolean) {
         finished = true
         won = win
+        timer?.cancel()
         if (!practice) stats.record(win)
         if (win) sfx.win() else sfx.lose()
         if (!win) {
@@ -389,6 +434,7 @@ class MainActivity : AppCompatActivity() {
         val left = (maxMistakes - mistakes).coerceAtLeast(0)
         infoText.text = "اللغز ${puzzleIndex + 1} من ${Puzzles.all.size}   |   المحاولات المتبقية: $left" +
             (if (stats.streak > 0) "   |   🔥 التتابع: ${stats.streak}" else "") +
+            (if (secondsLeft >= 0 && !finished) "   |   ⏱ ${secondsLeft / 60}:${"%02d".format(secondsLeft % 60)}" else "") +
             (if (practice) "   |   وضع التدريب" else "")
 
         submitBtn.isEnabled = !finished && selected.size == 4
@@ -403,7 +449,7 @@ class MainActivity : AppCompatActivity() {
         saveProgress()
     }
 
-    /** تلميح مقابل إعلان: يكشف اسم أسهل مجموعة لم تُحل بعد. حد أقصى لكل لغز. */
+    /** تلميح مقابل إعلان: يكشف اسم مجموعة عشوائية لم تُحل ولم يُلمَّح لها بعد. حد أقصى لكل لغز. */
     private fun requestHint() {
         if (finished) return
         if (hintsUsed >= maxHints) {
@@ -412,8 +458,12 @@ class MainActivity : AppCompatActivity() {
         }
         ads.show(
             onReward = {
-                val target = puzzle.groups.filter { it !in solved }.minByOrNull { it.level }
+                val unsolved = puzzle.groups.filter { it !in solved }
+                // مجموعة عشوائية لم يُعطَ تلميحها من قبل في هذا اللغز (وإلا أي مجموعة غير محلولة)
+                val fresh = unsolved.filter { it.title !in hinted }
+                val target = (if (fresh.isNotEmpty()) fresh else unsolved).randomOrNull()
                 if (target != null && !finished) {
+                    hinted.add(target.title)
                     hintsUsed++
                     messageText.text = "تلميح: إحدى المجموعات هي «${target.title}»"
                     render()
